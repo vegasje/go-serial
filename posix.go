@@ -92,21 +92,23 @@ func (c *Connection) read(buf []byte) (size int, err error) {
 		return size, errors.New("This connection has not been opened.")
 	}
 
-	available := c.reader.Buffered()
-
 	for size < len(buf) {
 		// Stop reading if we have reached the timeout
 		current := time.Now()
 		if current.Sub(start) >= c.Timeout {
 			break
 		}
-
-		n, err := c.reader.Read(buf[size:available])
-		if err != nil {
-			return size, err
+		
+		available := c.reader.Buffered()
+		if available > 0 {
+			fmt.Printf("available to read: %v\n", available)
+			n, err := c.reader.Read(buf[size : available-1])
+			if err != nil {
+				return size, err
+			}
+			
+			size += n
 		}
-
-		size += n
 	}
 
 	return size, nil
