@@ -7,7 +7,6 @@ package serial
 import "C"
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -20,9 +19,6 @@ func (c *Connection) open() (err error) {
 	if err != nil {
 		return err
 	}
-
-	c.reader = bufio.NewReader(c.file)
-	c.writer = bufio.NewWriter(c.file)
 
 	fd := C.int(c.file.Fd())
 	if C.isatty(fd) != 1 {
@@ -88,7 +84,7 @@ func (c *Connection) open() (err error) {
 func (c *Connection) read(buf []byte) (size int, err error) {
 	start := time.Now()
 
-	if c.reader == nil {
+	if c.file == nil {
 		return size, errors.New("This connection has not been opened.")
 	}
 
@@ -98,17 +94,13 @@ func (c *Connection) read(buf []byte) (size int, err error) {
 		if current.Sub(start) >= c.Timeout {
 			break
 		}
-		
-		available := c.reader.Buffered()
-		if available > 0 {
-			fmt.Printf("available to read: %v\n", available)
-			n, err := c.reader.Read(buf[size : available-1])
-			if err != nil {
-				return size, err
-			}
-			
-			size += n
+
+		n, err := c.file.Read(buf[size:])
+		if err != nil {
+			return size, err
 		}
+
+		size += n
 	}
 
 	return size, nil

@@ -1,7 +1,6 @@
 package serial
 
 import (
-	"bufio"
 	"os"
 	"time"
 )
@@ -23,8 +22,6 @@ type Connection struct {
 	Baud    Baud
 	Timeout time.Duration
 	file    *os.File
-	reader  *bufio.Reader
-	writer  *bufio.Writer
 }
 
 func Open(name string, baud Baud, timeout time.Duration) (*Connection, error) {
@@ -46,10 +43,9 @@ func (c *Connection) Read(buf []byte) (int, error) {
 }
 
 func (c *Connection) Write(data []byte) (int, error) {
-	return c.writer.Write(data)
+	return c.file.Write(data)
 }
 
 func (c *Connection) Close() error {
-	c.writer.Flush()
 	return c.file.Close()
 }
