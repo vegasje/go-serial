@@ -9,6 +9,7 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"syscall"
 	"time"
@@ -96,7 +97,7 @@ func (c *Connection) read(buf []byte) (size int, err error) {
 		}
 
 		n, err := c.file.Read(buf[size:])
-		if err != nil {
+		if err != nil && err != io.EOF {
 			return size, err
 		}
 
