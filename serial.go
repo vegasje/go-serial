@@ -1,6 +1,8 @@
 package serial
 
 import (
+	"errors"
+	"io"
 	"os"
 	"time"
 )
@@ -36,10 +38,33 @@ func Open(name string, baud Baud, timeout time.Duration) (*Connection, error) {
 }
 
 // Read size bytes from the serial port.
-// If a timeout is set it may return less characters than requested.
-// With no timeout it will block until the requested number of bytes is read.
-func (c *Connection) Read(buf []byte) (int, error) {
-	return c.read(buf)
+// If a timeout has been set > 0 it may return less characters than requested.
+// With a timeout = 0 it will block until the requested number of bytes is read.
+func (c *Connection) Read(buf []byte) (size int, err error) {
+	start := time.Now()
+
+	if c.file == nil {
+		return size, errors.New("This connection has not been opened.")
+	}
+
+	for size < len(buf) {
+		if c.Timeout != 0 {
+			// Stop reading if we have reached the timeout
+			current := time.Now()
+			if current.Sub(start) >= c.Timeout {
+				break
+			}
+		}
+
+		n, err := c.file.Read(buf[size:])
+		if err != nil && err != io.EOF {
+			return size, err
+		}
+
+		size += n
+	}
+
+	return size, nil
 }
 
 func (c *Connection) Write(data []byte) (int, error) {

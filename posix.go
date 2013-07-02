@@ -9,10 +9,8 @@ import "C"
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"syscall"
-	"time"
 )
 
 func (c *Connection) open() (err error) {
@@ -80,31 +78,6 @@ func (c *Connection) open() (err error) {
 	}
 
 	return nil
-}
-
-func (c *Connection) read(buf []byte) (size int, err error) {
-	start := time.Now()
-
-	if c.file == nil {
-		return size, errors.New("This connection has not been opened.")
-	}
-
-	for size < len(buf) {
-		// Stop reading if we have reached the timeout
-		current := time.Now()
-		if current.Sub(start) >= c.Timeout {
-			break
-		}
-
-		n, err := c.file.Read(buf[size:])
-		if err != nil && err != io.EOF {
-			return size, err
-		}
-
-		size += n
-	}
-
-	return size, nil
 }
 
 func convertBaud(baud Baud) (C.speed_t, error) {
