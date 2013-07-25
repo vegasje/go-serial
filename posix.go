@@ -19,10 +19,10 @@ func (c *Connection) open() (err error) {
 		return err
 	}
 
-	fd := C.int(c.file.Fd())
-	if C.isatty(fd) != 1 {
+	fd, err := c.getFileDescriptor()
+	if err != nil {
 		c.file.Close()
-		return errors.New("File is not a tty")
+		return err
 	}
 
 	var st C.struct_termios
@@ -32,19 +32,8 @@ func (c *Connection) open() (err error) {
 		return err
 	}
 
-	speed, err := convertBaud(c.Baud)
-	if err != nil {
-		c.file.Close()
-		return err
-	}
-
-	_, err = C.cfsetispeed(&st, speed)
-	if err != nil {
-		c.file.Close()
-		return err
-	}
-
-	_, err = C.cfsetospeed(&st, speed)
+	// set the baud rate of the connection
+	err = c.setBaudRate(c.Baud)
 	if err != nil {
 		c.file.Close()
 		return err
@@ -78,6 +67,45 @@ func (c *Connection) open() (err error) {
 	}
 
 	return nil
+}
+
+func (c *Connection) setBaudRate(baud Baud) error {
+	fd, err := c.getFileDescriptor()
+	if err != nil {
+		return err
+	}
+
+	var st C.struct_termios
+	_, err = C.tcgetattr(fd, &st)
+	if err != nil {
+		return err
+	}
+
+	speed, err := convertBaud(c.Baud)
+	if err != nil {
+		return err
+	}
+
+	_, err = C.cfsetispeed(&st, speed)
+	if err != nil {
+		return err
+	}
+
+	_, err = C.cfsetospeed(&st, speed)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Connection) getFileDescriptor() (fd C.int, err error) {
+	fd = C.int(c.file.Fd())
+	if C.isatty(fd) != 1 {
+		err = errors.New("File is not a tty")
+	}
+
+	return fd, err
 }
 
 func convertBaud(baud Baud) (C.speed_t, error) {

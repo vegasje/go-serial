@@ -37,6 +37,10 @@ func Open(name string, baud Baud, timeout time.Duration) (*Connection, error) {
 	return &c, nil
 }
 
+func (c *Connection) SetBaudRate(baud Baud) error {
+	return c.setBaudRate(baud)
+}
+
 // Read size bytes from the serial port.
 // If a timeout has been set > 0 it may return less characters than requested.
 // With a timeout = 0 it will block until the requested number of bytes is read.
